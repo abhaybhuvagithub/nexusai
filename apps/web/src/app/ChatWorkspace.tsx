@@ -43,10 +43,9 @@ function Workspace({ getToken }: { getToken?: () => Promise<string | null> }) {
   const [projectDescription, setProjectDescription] = useState("");
   const [documentTitle, setDocumentTitle] = useState("");
   const [documentContent, setDocumentContent] = useState("");
-  const [hydrated, setHydrated] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
-  async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const api = useCallback(async <T,>(path: string, init: RequestInit = {}): Promise<T> => {
     if (!apiBase) throw new Error("The API endpoint is not configured for this deployment.");
     const token = getToken ? await getToken() : null;
     if (getToken && !token) throw new Error("Your session has expired. Please sign in again.");
@@ -60,10 +59,10 @@ function Workspace({ getToken }: { getToken?: () => Promise<string | null> }) {
     }
     if (response.status === 204) return undefined as T;
     return await response.json() as T;
-  }
+  }, [getToken]);
 
   const refreshWorkspace = useCallback(async () => {
-    if (!apiBase) { setHydrated(true); return; }
+    if (!apiBase) return;
     try {
       const [history, projectList, docs, availableModels, metrics] = await Promise.all([
         api<Conversation[]>("/api/v1/conversations"),
@@ -81,10 +80,8 @@ function Workspace({ getToken }: { getToken?: () => Promise<string | null> }) {
       setNotice("");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Unable to load workspace data.");
-    } finally {
-      setHydrated(true);
     }
-  }, [getToken]);
+  }, [api, model]);
 
   useEffect(() => { void refreshWorkspace(); }, [refreshWorkspace]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages, busy]);
@@ -201,14 +198,14 @@ function Workspace({ getToken }: { getToken?: () => Promise<string | null> }) {
         <div className="history-list">{filteredConversations.slice(0, 30).map((item) => <div className="history-row" key={item.id}><button className="history-entry" onClick={() => void openConversation(item.id)}>{item.title}</button><button className="history-delete" aria-label="Delete conversation" onClick={() => void removeItem(`/api/v1/conversations/${item.id}`, "conversation")}>×</button></div>)}{filteredConversations.length === 0 && <p className="empty-history">No conversations yet.</p>}</div>
         <div className="sidebar-bottom">
           <div className="plan-card"><div className="plan-icon">✦</div><div><b>Personal workspace</b><span>Private, persistent and yours.</span></div></div>
-          <div className="profile"><div className="avatar">N</div><div className="profile-copy"><b>NEXUS account</b><span>{apiBase ? "Connected workspace" : "API not configured"}</span></div><span className="profile-menu"><UserButton /></span></div>
+          <div className="profile"><div className="avatar">N</div><div className="profile-copy"><b>NEXUS account</b><span>{apiBase ? "Connected workspace" : "API not configured"}</span></div><span className="profile-menu">{getToken ? <UserButton /> : "•••"}</span></div>
         </div>
       </aside>
 
       <section className="main-panel">
         <header className="topbar">
           <div className="breadcrumbs"><span>Workspace</span><span className="crumb-sep">/</span><b>{section[0].toUpperCase() + section.slice(1)}</b></div>
-          <div className="topbar-right"><span className="preview-pill"><i /> {apiBase ? "Workspace services" : "Local preview"}</span><SignedOut><SignInButton mode="modal"><button className="icon-button">Sign in</button></SignInButton><SignUpButton mode="modal"><button className="icon-button">Create account</button></SignUpButton></SignedOut><SignedIn><UserButton /></SignedIn></div>
+          <div className="topbar-right"><span className="preview-pill"><i /> {apiBase ? "Workspace services" : "Local preview"}</span>{getToken ? <><SignedOut><SignInButton mode="modal"><button className="icon-button">Sign in</button></SignInButton><SignUpButton mode="modal"><button className="icon-button">Create account</button></SignUpButton></SignedOut><SignedIn><UserButton /></SignedIn></> : null}</div>
         </header>
 
         {notice && <div className="global-notice" role="status"><span>ⓘ</span>{notice}<button onClick={() => setNotice("")} aria-label="Dismiss notice">×</button></div>}
