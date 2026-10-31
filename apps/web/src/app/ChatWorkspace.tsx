@@ -133,6 +133,29 @@ function Workspace({ getToken }: { getToken?: () => Promise<string | null> }) {
     finally { setBusy(false); }
   }
 
+  async function uploadDocument(file: File | undefined) {
+    if (!file) return;
+    setBusy(true); setNotice("");
+    try {
+      if (!apiBase) throw new Error("The API endpoint is not configured for this deployment.");
+      const token = getToken ? await getToken() : null;
+      if (getToken && !token) throw new Error("Please sign in before uploading files.");
+      const form = new FormData();
+      form.append("file", file);
+      const headers = new Headers();
+      if (token) headers.set("Authorization", `Bearer ${token}`);
+      const response = await fetch(`${apiBase}/api/v1/knowledge/upload`, { method: "POST", headers, body: form });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({})) as { detail?: string };
+        throw new Error(body.detail || `Upload failed (${response.status})`);
+      }
+      await refreshWorkspace();
+      setNotice(`${file.name} added to your knowledge library.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "File upload failed.");
+    } finally { setBusy(false); }
+  }
+
   async function addDocument(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!documentTitle.trim() || !documentContent.trim()) return;
@@ -231,7 +254,7 @@ function Workspace({ getToken }: { getToken?: () => Promise<string | null> }) {
 
         {section === "projects" && <div className="workspace-page"><p className="eyebrow">PROJECTS</p><h1>Organize meaningful work.</h1><p className="page-intro">Create private project spaces for initiatives, engineering work and research. Project records are stored against your authenticated account.</p><form className="inline-create" onSubmit={(event) => void createProject(event)}><input value={projectName} onChange={(event) => setProjectName(event.target.value)} placeholder="Project name" maxLength={120}/><input value={projectDescription} onChange={(event) => setProjectDescription(event.target.value)} placeholder="Short description" maxLength={4000}/><button className="primary-action" disabled={busy || !projectName.trim()}>Create project</button></form><div className="resource-list">{projects.map((project) => <article className="resource-card" key={project.id}><div><b>{project.name}</b><p>{project.description || "No description"}</p></div><button onClick={() => void removeItem(`/api/v1/projects/${project.id}`, "project")}>Delete</button></article>)}{projects.length === 0 && <p className="empty-state">Your first project starts here. Create one above.</p>}</div></div>}
 
-        {section === "library" && <div className="workspace-page"><p className="eyebrow">PRIVATE KNOWLEDGE</p><h1>Bring your context.</h1><p className="page-intro">Save text notes, specifications and reference material. Select saved documents in Chat to include their content as grounded context in a model request.</p><form className="work-form" onSubmit={(event) => void addDocument(event)}><label>DOCUMENT TITLE<input value={documentTitle} onChange={(event) => setDocumentTitle(event.target.value)} placeholder="e.g. Architecture decisions" maxLength={200}/></label><label>DOCUMENT CONTENT<textarea value={documentContent} onChange={(event) => setDocumentContent(event.target.value)} rows={7} maxLength={100000} placeholder="Paste notes, requirements, technical documentation or other text…"/></label><div className="form-foot"><span>{documentContent.length.toLocaleString()} / 100,000 characters</span><button className="primary-action" disabled={busy || !documentTitle.trim() || !documentContent.trim()}>Save to knowledge</button></div></form><div className="resource-list">{documents.map((doc) => <article className="resource-card" key={doc.id}><div><b>{doc.title}</b><p>{doc.content_chars.toLocaleString()} characters</p></div><button onClick={() => void removeItem(`/api/v1/knowledge/documents/${doc.id}`, "document")}>Delete</button></article>)}{documents.length === 0 && <p className="empty-state">No documents saved yet.</p>}</div></div>}
+        {section === "library" && <div className="workspace-page"><p className="eyebrow">PRIVATE KNOWLEDGE</p><h1>Bring your context.</h1><p className="page-intro">Save text notes, specifications and reference material. Select saved documents in Chat to include their content as grounded context in a model request.</p><div className="upload-panel"><label>UPLOAD A DOCUMENT <input type="file" accept=".txt,.md,.csv,.json,.log,.pdf,.docx" onChange={(event) => void uploadDocument(event.target.files?.[0])} disabled={busy}/></label><span>TXT, MD, CSV, JSON, LOG, PDF or DOCX · maximum 5 MB</span></div><form className="work-form" onSubmit={(event) => void addDocument(event)}><label>DOCUMENT TITLE<input value={documentTitle} onChange={(event) => setDocumentTitle(event.target.value)} placeholder="e.g. Architecture decisions" maxLength={200}/></label><label>DOCUMENT CONTENT<textarea value={documentContent} onChange={(event) => setDocumentContent(event.target.value)} rows={7} maxLength={100000} placeholder="Paste notes, requirements, technical documentation or other text…"/></label><div className="form-foot"><span>{documentContent.length.toLocaleString()} / 100,000 characters</span><button className="primary-action" disabled={busy || !documentTitle.trim() || !documentContent.trim()}>Save to knowledge</button></div></form><div className="resource-list">{documents.map((doc) => <article className="resource-card" key={doc.id}><div><b>{doc.title}</b><p>{doc.content_chars.toLocaleString()} characters</p></div><button onClick={() => void removeItem(`/api/v1/knowledge/documents/${doc.id}`, "document")}>Delete</button></article>)}{documents.length === 0 && <p className="empty-state">No documents saved yet.</p>}</div></div>}
 
         {section === "usage" && <div className="workspace-page"><p className="eyebrow">ACCOUNT USAGE</p><h1>Understand your activity.</h1><p className="page-intro">Usage counters are recorded by the API for completed chat and agent requests. Character counts are operational estimates, not token counts or billing invoices.</p><div className="usage-grid"><article><span>REQUESTS</span><b>{usage?.requests ?? "—"}</b></article><article><span>INPUT CHARACTERS</span><b>{usage?.input_characters.toLocaleString() ?? "—"}</b></article><article><span>OUTPUT CHARACTERS</span><b>{usage?.output_characters.toLocaleString() ?? "—"}</b></article></div><div className="resource-list">{usage?.by_feature.map((row) => <article className="resource-card" key={row.feature + row.model}><div><b>{row.feature}</b><p>{row.model}</p></div><strong>{row.requests} requests</strong></article>)}</div></div>}
 
