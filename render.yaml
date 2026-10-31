@@ -2,16 +2,18 @@ databases:
   - name: nexusai-db
     databaseName: nexusai
     user: nexusai
-    plan: basic-256mb
+    plan: basic-1gb
     region: singapore
     postgresMajorVersion: "16"
 
 services:
-  - type: redis
+  - type: keyvalue
     name: nexusai-cache
-    plan: starter
+    plan: 256mb
     region: singapore
+    ipAllowList: []
     maxmemoryPolicy: allkeys-lru
+    persistenceMode: journal-snapshot
 
   - type: web
     runtime: node
@@ -55,7 +57,7 @@ services:
       - key: REDIS_URL
         fromService:
           name: nexusai-cache
-          type: redis
+          type: keyvalue
           property: connectionString
       - key: OPENAI_API_KEY
         sync: false
