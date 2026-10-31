@@ -231,10 +231,10 @@ async def chat_completion(
         await db.flush()
         conversation_id = conversation.id
     else:
-        result = await db.execute(
+        conversation_result = await db.execute(
             select(Conversation).where(Conversation.id == conversation_id, Conversation.user_id == user_id)
         )
-        conversation = result.scalar_one_or_none()
+        conversation = conversation_result.scalar_one_or_none()
         if conversation is None:
             raise HTTPException(status_code=404, detail="Conversation not found")
         if payload.project_id is not None:
@@ -326,8 +326,8 @@ async def upload_knowledge_file(
             extracted = "\\n".join(page.extract_text() or "" for page in reader.pages)
         elif suffix == "docx":
             from docx import Document
-            document = Document(io.BytesIO(data))
-            extracted = "\\n".join(paragraph.text for paragraph in document.paragraphs)
+            docx_document = Document(io.BytesIO(data))
+            extracted = "\\n".join(paragraph.text for paragraph in docx_document.paragraphs)
         else:
             raise HTTPException(status_code=415, detail="Supported files: TXT, MD, CSV, JSON, LOG, PDF and DOCX")
     except HTTPException:
@@ -339,13 +339,13 @@ async def upload_knowledge_file(
         raise HTTPException(status_code=400, detail="No readable text was found in this file")
     if len(extracted) > 100_000:
         extracted = extracted[:100_000]
-    document = KnowledgeDocument(
+    knowledge_document = KnowledgeDocument(
         user_id=owner_id(claims), title=filename, content=extracted, content_chars=len(extracted)
     )
-    db.add(document)
+    db.add(knowledge_document)
     await db.commit()
-    await db.refresh(document)
-    return {"id": document.id, "title": document.title, "content_chars": document.content_chars}
+    await db.refresh(knowledge_document)
+    return {"id": knowledge_document.id, "title": knowledge_document.title, "content_chars": knowledge_document.content_chars}
 
 
 @app.delete("/api/v1/knowledge/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["knowledge"])
