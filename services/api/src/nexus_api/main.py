@@ -27,6 +27,7 @@ from nexus_api.models import (
 from nexus_api.providers import OpenAIProvider
 from nexus_api.schemas import (
     AgentInput,
+    AgentWorkflowInput,
     ChatMessage,
     ChatRequest,
     ChatResponse,
@@ -375,6 +376,39 @@ async def run_agent(payload: AgentInput, claims: Identity, db: Database) -> dict
     await db.commit()
     return {"agent": payload.agent, "answer": answer, "model": model}
 
+
+
+
+@app.post("/api/v1/agents/orchestrate", tags=["agents"])
+async def orchestrate_agents(payload: AgentWorkflowInput, claims: Identity, db: Database) -> dict[str, Any]:
+    user_id = owner_id(claims)
+    if any(step not in AGENTS for step in payload.steps):
+        raise HTTPException(status_code=400, detail="Workflow contains an unknown specialist")
+    if payload.model and payload.model not in settings.allowed_model_names:
+        raise HTTPException(status_code=400, detail="Requested model is not enabled for this deployment")
+    model = payload.model or settings.openai_model
+    previous = payload.task
+    completed_steps: list[dict[str, str]] = []
+    for index, specialist in enumerate(payload.steps, start=1):
+        await enforce_rate_limit(user_id)
+        if index == 1:
+            prompt = payload.task
+        else:
+            prompt = (
+                "Continue the team workflow. Use the previous specialist output as input, check it critically, "
+                "and add your own specialist deliverable. Preserve useful details and call out unsupported assumptions.\n\n"
+                + previous[-12000:]
+            )
+        answer = await OpenAIProvider(settings).complete(
+            [ChatMessage(role="system", content=AGENTS[specialist]), ChatMessage(role="user", content=prompt)],
+            model,
+        )
+        previous = answer
+        completed_steps.append({"specialist": specialist, "answer": answer})
+        db.add(UsageEvent(user_id=user_id, feature=f"workflow:{specialist}", model=model,
+                          input_chars=len(prompt), output_chars=len(answer)))
+        await db.commit()
+    return {"task": payload.task, "model": model, "steps": completed_steps, "final_output": previous}
 
 @app.post("/api/v1/research", tags=["research"])
 async def research(payload: AgentInput, claims: Identity, db: Database) -> dict[str, str]:
