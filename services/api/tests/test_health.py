@@ -32,6 +32,7 @@ def test_chat_requires_oidc_bearer_when_identity_is_configured(monkeypatch) -> N
         oidc_audience="nexus-api",
         oidc_jwks_url="https://identity.example.com/.well-known/jwks.json",
     )
+    original_settings = app.state.settings
     app.state.settings = protected
     try:
         response = client.post(
@@ -40,4 +41,4 @@ def test_chat_requires_oidc_bearer_when_identity_is_configured(monkeypatch) -> N
         )
         assert response.status_code == 401
     finally:
-        app.state.settings = app.state.settings.__class__()
+        app.state.settings = original_settings
