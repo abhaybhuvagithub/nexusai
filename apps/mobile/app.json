@@ -1,0 +1,1 @@
+{"expo":{"name":"NEXUS AI","slug":"nexus-ai","scheme":"nexusai","version":"0.1.0","orientation":"portrait","userInterfaceStyle":"dark","newArchEnabled":true,"ios":{"supportsTablet":true,"bundleIdentifier":"ai.nexusai.app"},"android":{"package":"ai.nexusai.app"},"plugins":["expo-router"]}}
