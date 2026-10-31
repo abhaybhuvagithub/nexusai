@@ -1,12 +1,13 @@
+import io
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -215,6 +216,7 @@ async def chat_completion(
     db.add(ConversationMessage(conversation_id=conversation_id, role="assistant", content=answer, model=payload.model or settings.openai_model))
     db.add(UsageEvent(user_id=user_id, feature="chat", model=payload.model or settings.openai_model,
                       input_chars=sum(len(message.content) for message in payload.messages), output_chars=len(answer)))
+    await db.execute(update(Conversation).where(Conversation.id == conversation_id).values(updated_at=func.now()))
     await db.commit()
     return ChatResponse(answer=answer, model=payload.model or settings.openai_model, provider="openai", conversation_id=conversation_id)
 
@@ -264,6 +266,49 @@ async def list_documents(claims: Identity, db: Database) -> list[dict[str, Any]]
 @app.post("/api/v1/knowledge/documents", status_code=status.HTTP_201_CREATED, tags=["knowledge"])
 async def create_document(payload: KnowledgeInput, claims: Identity, db: Database) -> dict[str, Any]:
     document = KnowledgeDocument(user_id=owner_id(claims), title=payload.title.strip(), content=payload.content, content_chars=len(payload.content))
+    db.add(document)
+    await db.commit()
+    await db.refresh(document)
+    return {"id": document.id, "title": document.title, "content_chars": document.content_chars}
+
+
+
+
+@app.post("/api/v1/knowledge/upload", status_code=status.HTTP_201_CREATED, tags=["knowledge"])
+async def upload_knowledge_file(
+    claims: Identity,
+    db: Database,
+    file: UploadFile = File(...),
+) -> dict[str, Any]:
+    filename = (file.filename or "document").strip()
+    if len(filename) > 200:
+        raise HTTPException(status_code=400, detail="Filename is too long")
+    data = await file.read(5_000_001)
+    if len(data) > 5_000_000:
+        raise HTTPException(status_code=413, detail="Files must be 5 MB or smaller")
+    suffix = filename.lower().rsplit(".", 1)[-1] if "." in filename else ""
+    try:
+        if suffix in {"txt", "md", "csv", "json", "log"}:
+            extracted = data.decode("utf-8-sig")
+        elif suffix == "pdf":
+            from pypdf import PdfReader
+            reader = PdfReader(io.BytesIO(data))
+            extracted = "\\n".join(page.extract_text() or "" for page in reader.pages)
+        elif suffix == "docx":
+            from docx import Document
+            document = Document(io.BytesIO(data))
+            extracted = "\\n".join(paragraph.text for paragraph in document.paragraphs)
+        else:
+            raise HTTPException(status_code=415, detail="Supported files: TXT, MD, CSV, JSON, LOG, PDF and DOCX")
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="The file could not be read as text") from exc
+    if not extracted.strip():
+        raise HTTPException(status_code=400, detail="No readable text was found in this file")
+    if len(extracted) > 100_000:
+        extracted = extracted[:100_000]
+    document = KnowledgeDocument(
+        user_id=owner_id(claims), title=filename, content=extracted, content_chars=len(extracted)
+    )
     db.add(document)
     await db.commit()
     await db.refresh(document)
