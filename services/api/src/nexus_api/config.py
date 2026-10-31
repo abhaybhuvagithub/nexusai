@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     oidc_issuer: str = ""
     oidc_audience: str = ""
     oidc_jwks_url: str = ""
+    database_url: str = ""
+    redis_url: str = ""
+    rate_limit_per_minute: int = Field(default=30, ge=1, le=600)
     max_request_messages: int = Field(default=50, ge=1, le=100)
     max_message_chars: int = Field(default=16000, ge=1, le=32000)
     max_completion_tokens: int = Field(default=2048, ge=128, le=8192)
@@ -41,6 +44,8 @@ class Settings(BaseSettings):
                 raise ValueError("OPENAI_API_KEY is required in production")
             if not self.authentication_configured:
                 raise ValueError("OIDC_ISSUER, OIDC_AUDIENCE and OIDC_JWKS_URL are required in production")
+            if not self.database_url or not self.redis_url:
+                raise ValueError("DATABASE_URL and REDIS_URL are required in production")
             if not self.allowed_origins or "*" in self.allowed_origins:
                 raise ValueError("Production CORS_ORIGINS must contain explicit trusted origins")
             if not self.allowed_model_names or self.openai_model not in self.allowed_model_names:
