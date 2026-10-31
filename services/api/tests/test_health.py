@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from nexus_api.db import get_db
 from nexus_api.main import app
 
 client = TestClient(app)
@@ -19,8 +20,15 @@ def test_readiness_reports_missing_provider_without_claiming_ready() -> None:
 
 
 def test_chat_rejects_empty_messages() -> None:
-    response = client.post("/api/v1/chat/completions", json={"messages": []})
-    assert response.status_code == 422
+    async def fake_db():
+        yield None
+
+    app.dependency_overrides[get_db] = fake_db
+    try:
+        response = client.post("/api/v1/chat/completions", json={"messages": []})
+        assert response.status_code == 422
+    finally:
+        app.dependency_overrides.pop(get_db, None)
 
 
 def test_chat_requires_oidc_bearer_when_identity_is_configured() -> None:
