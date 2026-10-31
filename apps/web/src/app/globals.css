@@ -46,3 +46,5 @@
 .account-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid #2b3e30}.secondary-action,.danger-action{border:1px solid #405545;border-radius:7px;background:#16231a;color:#c8d8ca;padding:9px 12px;font-size:10px}.danger-action{border-color:#70413b;background:#281a18;color:#e4aaa0}.danger-action:disabled{opacity:.45;cursor:not-allowed}
 
 .agent-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+
+.resource-actions{display:flex;align-items:center;gap:7px}
