@@ -1,4 +1,18 @@
+databases:
+  - name: nexusai-db
+    databaseName: nexusai
+    user: nexusai
+    plan: basic-256mb
+    region: singapore
+    postgresMajorVersion: "16"
+
 services:
+  - type: redis
+    name: nexusai-cache
+    plan: starter
+    region: singapore
+    maxmemoryPolicy: allkeys-lru
+
   - type: web
     runtime: node
     name: nexusai-web
@@ -9,6 +23,8 @@ services:
     startCommand: npm run start -- --hostname 0.0.0.0
     healthCheckPath: /
     envVars:
+      - key: NODE_ENV
+        value: production
       - key: NEXT_PUBLIC_NEXUS_API_URL
         value: https://nexusai-api.onrender.com
       - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
@@ -22,7 +38,7 @@ services:
     rootDir: services/api
     region: singapore
     plan: starter
-    buildCommand: pip install .
+    buildCommand: pip install . && alembic upgrade head
     startCommand: uvicorn nexus_api.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/v1/health/live
     envVars:
@@ -32,6 +48,15 @@ services:
         value: production
       - key: LOG_LEVEL
         value: INFO
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nexusai-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: nexusai-cache
+          type: redis
+          property: connectionString
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_MODEL
@@ -39,13 +64,15 @@ services:
       - key: ALLOWED_MODELS
         value: gpt-4.1-mini,gpt-4.1,o4-mini
       - key: CORS_ORIGINS
-        value: https://nexusai-web.onrender.com,https://abhaybhuvagithub.github.io
+        value: https://nexusai-web.onrender.com
       - key: OIDC_ISSUER
         sync: false
       - key: OIDC_AUDIENCE
         value: nexus-api
       - key: OIDC_JWKS_URL
         sync: false
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "30"
       - key: MAX_REQUEST_MESSAGES
         value: "50"
       - key: MAX_MESSAGE_CHARS
