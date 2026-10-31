@@ -78,6 +78,13 @@ class KnowledgeInput(BaseModel):
             raise ValueError("Document title cannot be blank")
         return value.strip()
 
+    @field_validator("content")
+    @classmethod
+    def nonblank_document(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Document content cannot be blank")
+        return value
+
 
 class AgentWorkflowInput(BaseModel):
     task: str = Field(min_length=1, max_length=12000)
