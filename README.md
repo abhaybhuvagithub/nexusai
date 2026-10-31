@@ -13,7 +13,7 @@ A multimodal AI workspace for web, Android and iOS, backed by a shared API and a
 - Clerk + Render setup guide: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
 - Production-hardening PR: https://github.com/abhaybhuvagithub/nexusai/pull/2
 
-The GitHub Pages URL currently serves the interactive workspace preview. It does not imply that live AI inference is connected. The Render Blueprint is intended to create a separate authenticated web deployment and API service after account setup.
+The GitHub Pages URL currently serves the older interactive preview and is no longer rebuilt. The Render Blueprint creates the authenticated Next.js web app and API service after account setup.
 
 ## Applications
 - `apps/web` — Next.js web client
