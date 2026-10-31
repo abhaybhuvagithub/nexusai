@@ -29,6 +29,7 @@ export default function ChatWorkspace() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [historyOpen, setHistoryOpen] = useState(true);
+  const [hydrated, setHydrated] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,12 +37,13 @@ export default function ChatWorkspace() {
       const saved = window.localStorage.getItem("nexusai.conversation.v1");
       if (saved) setMessages(JSON.parse(saved) as Message[]);
     } catch { /* Ignore invalid or unavailable local browser storage. */ }
+    finally { setHydrated(true); }
   }, []);
 
   useEffect(() => {
-    try { window.localStorage.setItem("nexusai.conversation.v1", JSON.stringify(messages)); } catch { /* Storage is optional. */ }
+    if (hydrated) { try { window.localStorage.setItem("nexusai.conversation.v1", JSON.stringify(messages)); } catch { /* Storage is optional. */ } }
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages]);
+  }, [messages, hydrated]);
 
   async function sendMessage(text: string) {
     const content = text.trim();
