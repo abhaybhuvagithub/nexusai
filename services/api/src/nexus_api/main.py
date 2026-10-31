@@ -368,9 +368,15 @@ async def run_agent(payload: AgentInput, claims: Identity, db: Database) -> dict
         raise HTTPException(status_code=400, detail="Requested model is not enabled for this deployment")
     model = payload.model or settings.openai_model
     system = AGENTS[payload.agent]
-    answer = await OpenAIProvider(settings).complete(
-        [ChatMessage(role="system", content=system), ChatMessage(role="user", content=payload.prompt)], model
-    )
+    try:
+        answer = await OpenAIProvider(settings).complete(
+            [ChatMessage(role="system", content=system), ChatMessage(role="user", content=payload.prompt)], model
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Agent provider request failed")
+        raise HTTPException(status_code=502, detail="Agent provider request failed") from exc
     db.add(UsageEvent(user_id=user_id, feature=f"agent:{payload.agent}", model=model,
                       input_chars=len(payload.prompt), output_chars=len(answer)))
     await db.commit()
@@ -399,10 +405,16 @@ async def orchestrate_agents(payload: AgentWorkflowInput, claims: Identity, db: 
                 "and add your own specialist deliverable. Preserve useful details and call out unsupported assumptions.\n\n"
                 + previous[-12000:]
             )
-        answer = await OpenAIProvider(settings).complete(
-            [ChatMessage(role="system", content=AGENTS[specialist]), ChatMessage(role="user", content=prompt)],
-            model,
-        )
+        try:
+            answer = await OpenAIProvider(settings).complete(
+                [ChatMessage(role="system", content=AGENTS[specialist]), ChatMessage(role="user", content=prompt)],
+                model,
+            )
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except Exception as exc:
+            logger.exception("Agent workflow provider request failed")
+            raise HTTPException(status_code=502, detail="Agent workflow provider request failed") from exc
         previous = answer
         completed_steps.append({"specialist": specialist, "answer": answer})
         db.add(UsageEvent(user_id=user_id, feature=f"workflow:{specialist}", model=model,
