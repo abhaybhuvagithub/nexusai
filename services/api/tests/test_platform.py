@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from nexus_api.agents import AGENTS
 from nexus_api.config import Settings
 from nexus_api.models import Base
-from nexus_api.schemas import AgentInput, ChatRequest, KnowledgeInput, ProjectInput
+from nexus_api.schemas import AgentInput, AgentWorkflowInput, ChatRequest, KnowledgeInput, ProjectInput
 
 
 def test_production_requires_persistence_and_rate_limit_services() -> None:
@@ -57,3 +57,10 @@ def test_workspace_schemas_enforce_bounds() -> None:
 def test_agent_catalog_and_tenant_models_exist() -> None:
     assert set(AGENTS) == {"architect", "researcher", "engineer", "analyst", "writer"}
     assert {"conversations", "conversation_messages", "projects", "knowledge_documents", "usage_events"} <= set(Base.metadata.tables)
+
+
+def test_agent_workflow_bounds_number_of_steps() -> None:
+    workflow = AgentWorkflowInput(task="Design a platform")
+    assert workflow.steps == ["architect", "engineer", "analyst"]
+    with pytest.raises(ValidationError):
+        AgentWorkflowInput(task="task", steps=["architect"])
