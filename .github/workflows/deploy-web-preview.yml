@@ -29,7 +29,7 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Build static web app
         working-directory: apps/web
-        run: npm run build
+        run: GITHUB_PAGES=true npm run build
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
