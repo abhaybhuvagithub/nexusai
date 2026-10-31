@@ -11,14 +11,21 @@ class OpenAIProvider:
         self.settings = settings
 
     async def complete(self, messages: list[ChatMessage], model: str | None = None) -> str:
-        if not self.settings.openai_api_key:
+        api_key = self.settings.openai_api_key.get_secret_value()
+        if not api_key:
             raise RuntimeError("No model provider is configured")
+        selected_model = model or self.settings.openai_model
+        if selected_model not in self.settings.allowed_model_names:
+            raise ValueError("Requested model is not enabled for this deployment")
         payload = {
-            "model": model or self.settings.openai_model,
+            "model": selected_model,
             "messages": [message.model_dump() for message in messages],
+            "max_completion_tokens": self.settings.max_completion_tokens,
         }
-        headers = {"Authorization": f"Bearer {self.settings.openai_api_key}"}
-        async with httpx.AsyncClient(timeout=httpx.Timeout(60.0, connect=10.0)) as client:
+        headers = {"Authorization": f"Bearer {api_key}"}
+        timeout = httpx.Timeout(self.settings.provider_timeout_seconds, connect=5.0)
+        limits = httpx.Limits(max_connections=50, max_keepalive_connections=20)
+        async with httpx.AsyncClient(timeout=timeout, limits=limits) as client:
             response = await client.post(
                 "https://api.openai.com/v1/chat/completions",
                 json=payload,
@@ -27,6 +34,6 @@ class OpenAIProvider:
             response.raise_for_status()
             data = response.json()
         choices = data.get("choices", [])
-        if not choices:
-            raise RuntimeError("Provider returned no completion choices")
+        if not choices or not choices[0].get("message", {}).get("content"):
+            raise RuntimeError("Provider returned no completion content")
         return str(choices[0]["message"]["content"])

@@ -1,0 +1,85 @@
+databases:
+  - name: nexusai-db
+    databaseName: nexusai
+    user: nexusai
+    plan: basic-1gb
+    region: singapore
+    postgresMajorVersion: "16"
+
+services:
+  - type: keyvalue
+    name: nexusai-cache
+    plan: 256mb
+    region: singapore
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
+    persistenceMode: journal-snapshot
+
+  - type: web
+    runtime: node
+    name: nexusai-web
+    rootDir: apps/web
+    region: singapore
+    plan: starter
+    buildCommand: npm install --no-audit --no-fund && npm run build
+    startCommand: npm run start -- --hostname 0.0.0.0
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_NEXUS_API_URL
+        value: https://nexusai-api.onrender.com
+      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+
+  - type: web
+    runtime: python
+    name: nexusai-api
+    rootDir: services/api
+    region: singapore
+    plan: starter
+    buildCommand: pip install . && alembic upgrade head
+    startCommand: uvicorn nexus_api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health/live
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nexusai-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: nexusai-cache
+          type: keyvalue
+          property: connectionString
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4.1-mini
+      - key: ALLOWED_MODELS
+        value: gpt-4.1-mini,gpt-4.1,o4-mini
+      - key: CORS_ORIGINS
+        value: https://nexusai-web.onrender.com
+      - key: OIDC_ISSUER
+        sync: false
+      - key: OIDC_AUDIENCE
+        value: nexus-api
+      - key: OIDC_JWKS_URL
+        sync: false
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "30"
+      - key: MAX_REQUEST_MESSAGES
+        value: "50"
+      - key: MAX_MESSAGE_CHARS
+        value: "16000"
+      - key: MAX_COMPLETION_TOKENS
+        value: "2048"
+      - key: PROVIDER_TIMEOUT_SECONDS
+        value: "45"

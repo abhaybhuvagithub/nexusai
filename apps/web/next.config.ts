@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
-  basePath: "/nexusai",
+  // Render hosts the dynamic Next.js application; GitHub Pages remains the older preview.
   images: { unoptimized: true },
 };
 
