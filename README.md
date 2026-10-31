@@ -53,6 +53,7 @@ The API reads `DATABASE_URL`, `REDIS_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `AL
 - `GET|POST|DELETE /api/v1/knowledge/documents`, `POST /api/v1/knowledge/upload`
 - `POST /api/v1/agents/run`, `POST /api/v1/research`
 - `GET /api/v1/usage`
+- `GET /api/v1/account/export`, `DELETE /api/v1/account/data`
 
 All workspace routes require an authenticated Clerk/OIDC subject in production and filter records by that subject. The local development mode uses a fixed local-only identity and must never be exposed publicly.
 
