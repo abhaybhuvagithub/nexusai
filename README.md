@@ -51,7 +51,7 @@ The API reads `DATABASE_URL`, `REDIS_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `AL
 - `GET|POST /api/v1/conversations`, `GET|DELETE /api/v1/conversations/{id}`
 - `GET|POST|PATCH|DELETE /api/v1/projects`
 - `GET|POST|DELETE /api/v1/knowledge/documents`, `POST /api/v1/knowledge/upload`
-- `POST /api/v1/agents/run`, `POST /api/v1/research`
+- `POST /api/v1/agents/run`, `POST /api/v1/agents/orchestrate`, `POST /api/v1/research`
 - `GET /api/v1/usage`
 - `GET /api/v1/account/export`, `DELETE /api/v1/account/data`
 
