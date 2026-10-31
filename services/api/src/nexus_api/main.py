@@ -182,6 +182,20 @@ async def chat_completion(
 ) -> ChatResponse:
     user_id = owner_id(claims)
     await enforce_rate_limit(user_id)
+    if payload.conversation_id is not None:
+        existing = await db.execute(
+            select(Conversation).where(
+                Conversation.id == payload.conversation_id, Conversation.user_id == user_id
+            )
+        )
+        if existing.scalar_one_or_none() is None:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+    if payload.project_id is not None:
+        project_result = await db.execute(
+            select(Project).where(Project.id == payload.project_id, Project.user_id == user_id)
+        )
+        if project_result.scalar_one_or_none() is None:
+            raise HTTPException(status_code=404, detail="Project not found")
     try:
         payload.enforce_runtime_limits()
         selected_messages = list(payload.messages)
@@ -211,7 +225,7 @@ async def chat_completion(
     conversation_id = payload.conversation_id
     if conversation_id is None:
         first_user = next((message.content for message in reversed(payload.messages) if message.role == "user"), "New conversation")
-        conversation = Conversation(user_id=user_id, title=first_user[:80])
+        conversation = Conversation(user_id=user_id, title=first_user[:80], project_id=payload.project_id)
         db.add(conversation)
         await db.flush()
         conversation_id = conversation.id
@@ -222,6 +236,8 @@ async def chat_completion(
         conversation = result.scalar_one_or_none()
         if conversation is None:
             raise HTTPException(status_code=404, detail="Conversation not found")
+        if payload.project_id is not None:
+            conversation.project_id = payload.project_id
 
     last_user = next((message for message in reversed(payload.messages) if message.role == "user"), None)
     if last_user:
@@ -313,7 +329,10 @@ async def upload_knowledge_file(
             extracted = "\\n".join(paragraph.text for paragraph in document.paragraphs)
         else:
             raise HTTPException(status_code=415, detail="Supported files: TXT, MD, CSV, JSON, LOG, PDF and DOCX")
-    except (UnicodeDecodeError, ValueError) as exc:
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.info("Knowledge file parsing failed for %s", filename)
         raise HTTPException(status_code=400, detail="The file could not be read as text") from exc
     if not extracted.strip():
         raise HTTPException(status_code=400, detail="No readable text was found in this file")
