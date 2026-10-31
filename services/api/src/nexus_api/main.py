@@ -399,3 +399,46 @@ async def usage(claims: Identity, db: Database) -> dict[str, Any]:
         "by_feature": [{"feature": row[0], "model": row[1], "requests": int(row[2] or 0),
                         "input_characters": int(row[3] or 0), "output_characters": int(row[4] or 0)} for row in rows],
     }
+
+
+@app.get("/api/v1/account/export", tags=["account"])
+async def export_account_data(claims: Identity, db: Database) -> dict[str, Any]:
+    user_id = owner_id(claims)
+    conversation_result = await db.execute(
+        select(Conversation).options(selectinload(Conversation.messages)).where(Conversation.user_id == user_id)
+    )
+    project_result = await db.execute(select(Project).where(Project.user_id == user_id))
+    document_result = await db.execute(select(KnowledgeDocument).where(KnowledgeDocument.user_id == user_id))
+    usage_result = await db.execute(select(UsageEvent).where(UsageEvent.user_id == user_id))
+    return {
+        "exported_at": func.now().compile().string,
+        "projects": [{"id": item.id, "name": item.name, "description": item.description, "color": item.color} for item in project_result.scalars().all()],
+        "conversations": [
+            {"id": item.id, "title": item.title, "messages": [
+                {"role": message.role, "content": message.content, "model": message.model}
+                for message in item.messages
+            ]}
+            for item in conversation_result.scalars().all()
+        ],
+        "knowledge_documents": [{"id": item.id, "title": item.title, "content": item.content} for item in document_result.scalars().all()],
+        "usage_events": [
+            {"feature": item.feature, "model": item.model, "input_characters": item.input_chars,
+             "output_characters": item.output_chars, "created_at": item.created_at.isoformat()}
+            for item in usage_result.scalars().all()
+        ],
+    }
+
+
+@app.delete("/api/v1/account/data", status_code=status.HTTP_204_NO_CONTENT, tags=["account"])
+async def delete_account_workspace_data(claims: Identity, db: Database) -> None:
+    user_id = owner_id(claims)
+    await db.execute(ConversationMessage.__table__.delete().where(
+        ConversationMessage.conversation_id.in_(
+            select(Conversation.id).where(Conversation.user_id == user_id)
+        )
+    ))
+    await db.execute(Conversation.__table__.delete().where(Conversation.user_id == user_id))
+    await db.execute(Project.__table__.delete().where(Project.user_id == user_id))
+    await db.execute(KnowledgeDocument.__table__.delete().where(KnowledgeDocument.user_id == user_id))
+    await db.execute(UsageEvent.__table__.delete().where(UsageEvent.user_id == user_id))
+    await db.commit()
