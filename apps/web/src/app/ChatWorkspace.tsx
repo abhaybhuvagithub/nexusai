@@ -183,7 +183,7 @@ function Workspace({ getToken }: { getToken?: () => Promise<string | null> }) {
     if (!agentPrompt.trim()) return;
     setBusy(true); setAgentResult(""); setNotice("");
     try {
-      const sequence = Array.from(new Set([agent, "engineer", "analyst"])).slice(0, 3);
+      const sequence = [agent, ...["architect", "engineer", "analyst", "researcher", "writer"].filter((item) => item !== agent)].slice(0, 3);
       const result = await api<{ steps: { specialist: string; answer: string }[]; final_output: string }>(
         "/api/v1/agents/orchestrate",
         { method: "POST", body: JSON.stringify({ task: agentPrompt, steps: sequence, model }) },
