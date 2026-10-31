@@ -1,26 +1,19 @@
 services:
   - type: web
-    runtime: static
+    runtime: node
     name: nexusai-web
     rootDir: apps/web
+    region: singapore
+    plan: starter
     buildCommand: npm install --no-audit --no-fund && npm run build
-    staticPublishPath: out
-    headers:
-      - path: /*
-        name: X-Content-Type-Options
-        value: nosniff
-      - path: /*
-        name: X-Frame-Options
-        value: DENY
-      - path: /*
-        name: Referrer-Policy
-        value: strict-origin-when-cross-origin
+    startCommand: npm run start -- --hostname 0.0.0.0
+    healthCheckPath: /
     envVars:
-      - key: GITHUB_PAGES
-        value: "false"
       - key: NEXT_PUBLIC_NEXUS_API_URL
         value: https://nexusai-api.onrender.com
       - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
         sync: false
 
   - type: web
