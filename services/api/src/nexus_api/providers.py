@@ -20,7 +20,7 @@ class OpenAIProvider:
         payload = {
             "model": selected_model,
             "messages": [message.model_dump() for message in messages],
-            "max_tokens": self.settings.max_completion_tokens,
+            "max_completion_tokens": self.settings.max_completion_tokens,
         }
         headers = {"Authorization": f"Bearer {api_key}"}
         timeout = httpx.Timeout(self.settings.provider_timeout_seconds, connect=5.0)
