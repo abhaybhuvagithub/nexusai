@@ -190,6 +190,29 @@ function Workspace({ getToken }: { getToken?: () => Promise<string | null> }) {
     finally { setBusy(false); }
   }
 
+  async function exportWorkspace() {
+    try {
+      const data = await api<Record<string, unknown>>("/api/v1/account/export");
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url; link.download = "nexusai-account-export.json"; link.click();
+      window.URL.revokeObjectURL(url);
+      setNotice("Your workspace export has been prepared.");
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Export failed."); }
+  }
+
+  async function clearWorkspace() {
+    if (!window.confirm("Permanently delete all conversations, projects, knowledge documents and usage records for this account? This does not delete your Clerk sign-in account.")) return;
+    setBusy(true);
+    try {
+      await api("/api/v1/account/data", { method: "DELETE" });
+      setMessages([]); setConversationId(null); setSelectedDocs([]); await refreshWorkspace();
+      setNotice("Workspace data deleted.");
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Workspace data could not be deleted."); }
+    finally { setBusy(false); }
+  }
+
   async function removeItem(path: string, label: string) {
     if (!window.confirm(`Delete this ${label}? This cannot be undone.`)) return;
     try { await api(path, { method: "DELETE" }); await refreshWorkspace(); setNotice(`${label} deleted.`); }
@@ -257,7 +280,7 @@ function Workspace({ getToken }: { getToken?: () => Promise<string | null> }) {
 
         {section === "library" && <div className="workspace-page"><p className="eyebrow">PRIVATE KNOWLEDGE</p><h1>Bring your context.</h1><p className="page-intro">Save text notes, specifications and reference material. Select saved documents in Chat to include their content as grounded context in a model request.</p><div className="upload-panel"><label>UPLOAD A DOCUMENT <input type="file" accept=".txt,.md,.csv,.json,.log,.pdf,.docx" onChange={(event) => void uploadDocument(event.target.files?.[0])} disabled={busy}/></label><span>TXT, MD, CSV, JSON, LOG, PDF or DOCX · maximum 5 MB</span></div><form className="work-form" onSubmit={(event) => void addDocument(event)}><label>DOCUMENT TITLE<input value={documentTitle} onChange={(event) => setDocumentTitle(event.target.value)} placeholder="e.g. Architecture decisions" maxLength={200}/></label><label>DOCUMENT CONTENT<textarea value={documentContent} onChange={(event) => setDocumentContent(event.target.value)} rows={7} maxLength={100000} placeholder="Paste notes, requirements, technical documentation or other text…"/></label><div className="form-foot"><span>{documentContent.length.toLocaleString()} / 100,000 characters</span><button className="primary-action" disabled={busy || !documentTitle.trim() || !documentContent.trim()}>Save to knowledge</button></div></form><div className="resource-list">{documents.map((doc) => <article className="resource-card" key={doc.id}><div><b>{doc.title}</b><p>{doc.content_chars.toLocaleString()} characters</p></div><button onClick={() => void removeItem(`/api/v1/knowledge/documents/${doc.id}`, "document")}>Delete</button></article>)}{documents.length === 0 && <p className="empty-state">No documents saved yet.</p>}</div></div>}
 
-        {section === "usage" && <div className="workspace-page"><p className="eyebrow">ACCOUNT USAGE</p><h1>Understand your activity.</h1><p className="page-intro">Usage counters are recorded by the API for completed chat and agent requests. Character counts are operational estimates, not token counts or billing invoices.</p><div className="usage-grid"><article><span>REQUESTS</span><b>{usage?.requests ?? "—"}</b></article><article><span>INPUT CHARACTERS</span><b>{usage?.input_characters.toLocaleString() ?? "—"}</b></article><article><span>OUTPUT CHARACTERS</span><b>{usage?.output_characters.toLocaleString() ?? "—"}</b></article></div><div className="resource-list">{usage?.by_feature.map((row) => <article className="resource-card" key={row.feature + row.model}><div><b>{row.feature}</b><p>{row.model}</p></div><strong>{row.requests} requests</strong></article>)}</div></div>}
+        {section === "usage" && <div className="workspace-page"><p className="eyebrow">ACCOUNT USAGE</p><h1>Understand your activity.</h1><p className="page-intro">Usage counters are recorded by the API for completed chat and agent requests. Character counts are operational estimates, not token counts or billing invoices.</p><div className="usage-grid"><article><span>REQUESTS</span><b>{usage?.requests ?? "—"}</b></article><article><span>INPUT CHARACTERS</span><b>{usage?.input_characters.toLocaleString() ?? "—"}</b></article><article><span>OUTPUT CHARACTERS</span><b>{usage?.output_characters.toLocaleString() ?? "—"}</b></article></div><div className="resource-list">{usage?.by_feature.map((row) => <article className="resource-card" key={row.feature + row.model}><div><b>{row.feature}</b><p>{row.model}</p></div><strong>{row.requests} requests</strong></article>)}</div><div className="account-actions"><button className="secondary-action" onClick={() => void exportWorkspace()}>Export my data</button><button className="danger-action" onClick={() => void clearWorkspace()} disabled={busy}>Delete workspace data</button></div></div>}
 
         <footer className="app-footer"><span>✳ NEXUS AI</span><span>One workspace. More ways to think.</span><a href="https://github.com/abhaybhuvagithub/nexusai" target="_blank" rel="noreferrer">Built in the open ↗</a></footer>
       </section>
