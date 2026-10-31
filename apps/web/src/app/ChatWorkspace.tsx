@@ -75,6 +75,7 @@ function Workspace({ getToken, isSignedIn }: { getToken?: () => Promise<string |
       setConversations(history);
       setProjects(projectList);
       setDocuments(docs);
+      setSelectedDocs((selected) => selected.filter((id) => docs.some((doc) => doc.id === id)));
       setModels(availableModels.models);
       setUsage(metrics);
       if (availableModels.models.length && !availableModels.models.includes(model)) setModel(availableModels.models[0]);
@@ -157,6 +158,21 @@ function Workspace({ getToken, isSignedIn }: { getToken?: () => Promise<string |
     } finally { setBusy(false); }
   }
 
+  async function editProject(project: Project) {
+    const name = window.prompt("Project name", project.name);
+    if (name === null || !name.trim()) return;
+    const description = window.prompt("Project description", project.description);
+    if (description === null) return;
+    try {
+      await api(`/api/v1/projects/${project.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ name, description, color: project.color }),
+      });
+      await refreshWorkspace();
+      setNotice("Project updated.");
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Project update failed."); }
+  }
+
   async function addDocument(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!documentTitle.trim() || !documentContent.trim()) return;
@@ -230,7 +246,12 @@ function Workspace({ getToken, isSignedIn }: { getToken?: () => Promise<string |
 
   async function removeItem(path: string, label: string) {
     if (!window.confirm(`Delete this ${label}? This cannot be undone.`)) return;
-    try { await api(path, { method: "DELETE" }); await refreshWorkspace(); setNotice(`${label} deleted.`); }
+    try {
+      await api(path, { method: "DELETE" });
+      if (label === "conversation" && Number(path.split("/").pop()) === conversationId) newChat();
+      await refreshWorkspace();
+      setNotice(`${label} deleted.`);
+    }
     catch (error) { setNotice(error instanceof Error ? error.message : `Could not delete ${label}.`); }
   }
 
@@ -291,7 +312,7 @@ function Workspace({ getToken, isSignedIn }: { getToken?: () => Promise<string |
 
         {section === "research" && <div className="workspace-page"><p className="eyebrow">RESEARCH STUDIO</p><h1>Turn questions into clarity.</h1><p className="page-intro">Generate structured analysis, compare approaches and identify evidence gaps. This synthesis uses the configured language model; it does not fetch live web pages or fabricate citations.</p><form className="work-form" onSubmit={(event) => void runResearch(event)}><label>RESEARCH QUESTION<textarea value={researchPrompt} onChange={(event) => setResearchPrompt(event.target.value)} rows={5} placeholder="What do you need to understand? Include scope, timeframe and decision context…"/></label><button className="primary-action" disabled={busy || !researchPrompt.trim()}>{busy ? "Researching…" : "Generate research brief"}</button></form>{researchResult && <article className="result-panel"><div className="result-heading">RESEARCH BRIEF <button onClick={() => void navigator.clipboard.writeText(researchResult)}>Copy</button></div><pre>{researchResult}</pre></article>}</div>}
 
-        {section === "projects" && <div className="workspace-page"><p className="eyebrow">PROJECTS</p><h1>Organize meaningful work.</h1><p className="page-intro">Create private project spaces for initiatives, engineering work and research. Project records are stored against your authenticated account.</p><form className="inline-create" onSubmit={(event) => void createProject(event)}><input value={projectName} onChange={(event) => setProjectName(event.target.value)} placeholder="Project name" maxLength={120}/><input value={projectDescription} onChange={(event) => setProjectDescription(event.target.value)} placeholder="Short description" maxLength={4000}/><button className="primary-action" disabled={busy || !projectName.trim()}>Create project</button></form><div className="resource-list">{projects.map((project) => <article className="resource-card" key={project.id}><div><b>{project.name}</b><p>{project.description || "No description"}</p></div><button onClick={() => void removeItem(`/api/v1/projects/${project.id}`, "project")}>Delete</button></article>)}{projects.length === 0 && <p className="empty-state">Your first project starts here. Create one above.</p>}</div></div>}
+        {section === "projects" && <div className="workspace-page"><p className="eyebrow">PROJECTS</p><h1>Organize meaningful work.</h1><p className="page-intro">Create private project spaces for initiatives, engineering work and research. Project records are stored against your authenticated account.</p><form className="inline-create" onSubmit={(event) => void createProject(event)}><input value={projectName} onChange={(event) => setProjectName(event.target.value)} placeholder="Project name" maxLength={120}/><input value={projectDescription} onChange={(event) => setProjectDescription(event.target.value)} placeholder="Short description" maxLength={4000}/><button className="primary-action" disabled={busy || !projectName.trim()}>Create project</button></form><div className="resource-list">{projects.map((project) => <article className="resource-card" key={project.id}><div><b>{project.name}</b><p>{project.description || "No description"}</p></div><div className="resource-actions"><button className="secondary-action" onClick={() => void editProject(project)}>Edit</button><button onClick={() => void removeItem(`/api/v1/projects/${project.id}`, "project")}>Delete</button></div></article>)}{projects.length === 0 && <p className="empty-state">Your first project starts here. Create one above.</p>}</div></div>}
 
         {section === "library" && <div className="workspace-page"><p className="eyebrow">PRIVATE KNOWLEDGE</p><h1>Bring your context.</h1><p className="page-intro">Save text notes, specifications and reference material. Select saved documents in Chat to include their content as grounded context in a model request.</p><div className="upload-panel"><label>UPLOAD A DOCUMENT <input type="file" accept=".txt,.md,.csv,.json,.log,.pdf,.docx" onChange={(event) => void uploadDocument(event.target.files?.[0])} disabled={busy}/></label><span>TXT, MD, CSV, JSON, LOG, PDF or DOCX · maximum 5 MB</span></div><form className="work-form" onSubmit={(event) => void addDocument(event)}><label>DOCUMENT TITLE<input value={documentTitle} onChange={(event) => setDocumentTitle(event.target.value)} placeholder="e.g. Architecture decisions" maxLength={200}/></label><label>DOCUMENT CONTENT<textarea value={documentContent} onChange={(event) => setDocumentContent(event.target.value)} rows={7} maxLength={100000} placeholder="Paste notes, requirements, technical documentation or other text…"/></label><div className="form-foot"><span>{documentContent.length.toLocaleString()} / 100,000 characters</span><button className="primary-action" disabled={busy || !documentTitle.trim() || !documentContent.trim()}>Save to knowledge</button></div></form><div className="resource-list">{documents.map((doc) => <article className="resource-card" key={doc.id}><div><b>{doc.title}</b><p>{doc.content_chars.toLocaleString()} characters</p></div><button onClick={() => void removeItem(`/api/v1/knowledge/documents/${doc.id}`, "document")}>Delete</button></article>)}{documents.length === 0 && <p className="empty-state">No documents saved yet.</p>}</div></div>}
 
