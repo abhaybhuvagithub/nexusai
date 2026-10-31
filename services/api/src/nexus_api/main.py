@@ -327,6 +327,8 @@ async def upload_knowledge_file(
         elif suffix == "pdf":
             from pypdf import PdfReader
             reader = PdfReader(io.BytesIO(data))
+            if len(reader.pages) > 100:
+                raise HTTPException(status_code=413, detail="PDF files are limited to 100 pages")
             extracted = "\\n".join(page.extract_text() or "" for page in reader.pages)
         elif suffix == "docx":
             from docx import Document
