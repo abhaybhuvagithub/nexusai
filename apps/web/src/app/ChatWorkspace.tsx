@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useAuth } from "@clerk/nextjs";
 
 type Message = { id: string; role: "user" | "assistant"; content: string; createdAt: number };
 type Section = "chat" | "research" | "agents" | "projects" | "library";
@@ -21,7 +22,7 @@ const sectionCopy: Record<Exclude<Section, "chat">, { eyebrow: string; title: st
 
 function makeId() { return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`; }
 
-export default function ChatWorkspace() {
+function Workspace({ getToken }: { getToken?: () => Promise<string | null> }) {
   const [section, setSection] = useState<Section>("chat");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -66,9 +67,12 @@ export default function ChatWorkspace() {
         setNotice("Preview mode · connect the NEXUS API to enable live AI responses.");
         return;
       }
+      if (!getToken) throw new Error("Authentication is not configured for this deployment.");
+      const token = await getToken();
+      if (!token) throw new Error("Please sign in before sending a message.");
       const response = await fetch(`${apiBase}/api/v1/chat/completions`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ messages: next.map(({ role, content: body }) => ({ role, content: body })), model }),
       });
       if (!response.ok) {
@@ -108,14 +112,14 @@ export default function ChatWorkspace() {
         {historyOpen && <div className="history-list">{messages.length > 0 ? <button className="history-entry" onClick={() => setSection("chat")}>{messages.find((message) => message.role === "user")?.content.slice(0, 32) || "Conversation"}…</button> : <p className="empty-history">Your conversations will appear here.</p>}</div>}
         <div className="sidebar-bottom">
           <div className="plan-card"><div className="plan-icon">✦</div><div><b>Build with NEXUS</b><span>Your AI workspace, evolving.</span></div></div>
-          <div className="profile"><div className="avatar">A</div><div className="profile-copy"><b>Workspace preview</b><span>Local session</span></div><span className="profile-menu">•••</span></div>
+          <div className="profile"><div className="avatar">A</div><div className="profile-copy"><b>{getToken ? "NEXUS workspace" : "Workspace preview"}</b><span>{getToken ? "Authenticated session" : "Local session"}</span></div><span className="profile-menu">•••</span></div>
         </div>
       </aside>
 
       <section className="main-panel">
         <header className="topbar">
           <div className="breadcrumbs"><span>Workspace</span><span className="crumb-sep">/</span><b>{section === "chat" ? "Chat" : activeCopy?.eyebrow.replace(" STUDIO", "").replace(" WORKSPACE", "").replace(" LIBRARY", "").toLowerCase()}</b></div>
-          <div className="topbar-right"><span className="preview-pill"><i /> Interactive preview</span><button className="icon-button" aria-label="Settings" onClick={() => setNotice("Settings and account management will be enabled with authentication.")}>⚙</button><div className="avatar small-avatar">A</div></div>
+          <div className="topbar-right"><span className="preview-pill"><i /> {getToken ? "Authenticated workspace" : "Interactive preview"}</span><button className="icon-button" aria-label="Settings" onClick={() => setNotice("Settings and account management will be enabled in a later release.")}>⚙</button>{getToken ? <div className="auth-actions"><SignedOut><SignInButton mode="modal"><button className="icon-button">Sign in</button></SignInButton><SignUpButton mode="modal"><button className="icon-button">Create account</button></SignUpButton></SignedOut><SignedIn><UserButton /></SignedIn></div> : <div className="avatar small-avatar">A</div>}</div>
         </header>
 
         {activeCopy ? <div className="feature-page"><div className="feature-orb">✳</div><p className="eyebrow">{activeCopy.eyebrow}</p><h1>{activeCopy.title}</h1><p className="feature-description">{activeCopy.description}</p><div className="feature-grid">{activeCopy.items.map((item, index) => <article className="feature-tile" key={item}><span>0{index + 1}</span><p>{item}</p></article>)}</div><button className="back-chat" onClick={() => setSection("chat")}>← Back to chat</button></div> :
@@ -133,4 +137,16 @@ export default function ChatWorkspace() {
       </section>
     </main>
   );
+}
+
+
+function AuthenticatedWorkspace() {
+  const { getToken } = useAuth();
+  return <Workspace getToken={() => getToken({ template: "nexus-api" })} />;
+}
+
+export default function ChatWorkspace() {
+  return process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+    ? <AuthenticatedWorkspace />
+    : <Workspace />;
 }
