@@ -1,53 +1,65 @@
 # NEXUS AI
 
-A multimodal AI workspace for web, Android and iOS, backed by a shared API and agent platform.
+NEXUS AI is a multi-module AI workspace with authenticated chat, specialist model workflows, persistent projects, a private knowledge library and usage reporting.
 
-> **Current release status:** the static web workspace is published on GitHub Pages. The API has a starter implementation and production-hardening work is in progress. The Clerk sign-in integration and Render deployment Blueprint are prepared on the production-hardening branch. The complete hosted product is **not yet production-ready**: Render resources and Clerk production credentials still require account-side setup, and durable conversation storage, rate limiting/abuse controls, streaming, operational monitoring, backup/restore and broader release gates remain before a public beta.
+## Product capabilities
 
-## Live links
+- **AI chat:** OpenAI-backed chat with model allowlisting, server-side provider credentials and persistent conversation history.
+- **Specialist agents:** Architect, Researcher, Engineer, Analyst and Writer workflows with role-specific instructions.
+- **Research studio:** structured model-assisted research briefs with explicit disclosure when no live web sources were retrieved.
+- **Projects:** private project records scoped to the authenticated account.
+- **Knowledge library:** private text notes and TXT, MD, CSV, JSON, LOG, PDF and DOCX ingestion (5 MB upload limit); selected documents can be supplied as chat context.
+- **Usage:** request and character counters by feature/model (operational metrics, not invoices or token billing).
+- **Security:** Clerk sign-in, OIDC RS256 API token verification, tenant ownership filters, Redis-backed per-user request limiting, request validation, explicit CORS and server-side model keys.
+- **Operations:** PostgreSQL persistence, Alembic migrations, health/readiness endpoints, Render Blueprint and CI checks.
 
-- Web workspace: https://abhaybhuvagithub.github.io/nexusai/
-- Source repository: https://github.com/abhaybhuvagithub/nexusai
-- Deployment workflow: https://github.com/abhaybhuvagithub/nexusai/actions/workflows/deploy-web-preview.yml
-- Render Blueprint: `render.yaml`
-- Clerk + Render setup guide: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
-- Production-hardening PR: https://github.com/abhaybhuvagithub/nexusai/pull/2
+## Live and source links
 
-The GitHub Pages URL currently serves the older interactive preview and is no longer rebuilt. The Render Blueprint creates the authenticated Next.js web app and API service after account setup.
+- Legacy GitHub Pages snapshot: https://abhaybhuvagithub.github.io/nexusai/
+- Repository: https://github.com/abhaybhuvagithub/nexusai
+- Render Blueprint: [render.yaml](render.yaml)
+- Clerk + Render setup: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Release gates: [docs/RELEASE_GATES.md](docs/RELEASE_GATES.md)
 
-## Applications
-- `apps/web` — Next.js web client
-- `apps/mobile` — Expo / React Native Android and iOS client
-- `services/api` — FastAPI backend and model-provider adapter
+The GitHub Pages address is an older static snapshot. The active authenticated application is configured for Render and requires the account-side deployment steps in the deployment guide. A configured codebase is not the same as a deployed and verified service; do not treat the legacy Pages URL as a live AI backend.
+
+## Repository layout
+
+- `apps/web` — Next.js web application
+- `apps/mobile` — Expo / React Native client starter
+- `services/api` — FastAPI API, model provider, auth, persistence and workspace routes
+- `services/api/migrations` — Alembic database migrations
+- `render.yaml` — Render web, API, PostgreSQL and Redis blueprint
 
 ## Local development
-Requirements: Node.js 24+, Python 3.12+, Docker Compose.
 
-1. Copy `.env.example` to `.env` and configure provider credentials.
-2. Start dependencies: `docker compose up -d postgres redis`.
-3. API: `cd services/api && pip install -e '.[dev]' && uvicorn nexus_api.main:app --reload`.
-4. Web: `cd apps/web && npm install && npm run dev`.
-5. Mobile: `cd apps/mobile && npm install && npx expo start`.
+Requirements: Node.js 20+, Python 3.12+, Docker Compose.
 
-Health endpoints: `/api/v1/health/live` and `/api/v1/health/ready`.
+1. Start infrastructure: `docker compose up -d postgres redis`.
+2. API: `cd services/api && pip install -e '.[dev]' && alembic upgrade head && uvicorn nexus_api.main:app --reload`.
+3. Web: `cd apps/web && npm install && npm run dev`.
+4. Configure Clerk's local publishable key and JWT template `nexus-api` if testing authenticated local flows. Keep all provider and Clerk secret keys in local environment variables only.
 
-## API security configuration
+The API reads `DATABASE_URL`, `REDIS_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `ALLOWED_MODELS`, `OIDC_ISSUER`, `OIDC_AUDIENCE`, `OIDC_JWKS_URL`, and `CORS_ORIGINS`. See `services/api/.env.example` and the deployment guide.
 
-Production startup is fail-closed. Set all of the following on the API host:
-- `APP_ENV=production`
-- `OPENAI_API_KEY` as a managed secret
-- `OPENAI_MODEL` and `ALLOWED_MODELS` (comma-separated allowlist)
-- `CORS_ORIGINS` to exact trusted HTTPS origins; wildcards are rejected
-- `OIDC_ISSUER`, `OIDC_AUDIENCE`, and `OIDC_JWKS_URL` from the chosen identity provider
-- `MAX_REQUEST_MESSAGES`, `MAX_MESSAGE_CHARS`, `MAX_COMPLETION_TOKENS`, and `PROVIDER_TIMEOUT_SECONDS` as required
+## API routes
 
-The chat endpoint validates OIDC RS256 bearer tokens when identity is configured. In production, missing OIDC configuration prevents startup. Provider keys are server-only. The API does not yet implement per-user quotas, persistent chat history, or tenant-aware data storage; do not expose it as a general public endpoint until those controls are added.
+- `GET /api/v1/health/live` and `GET /api/v1/health/ready`
+- `GET /api/v1/models`
+- `POST /api/v1/chat/completions`
+- `GET|POST /api/v1/conversations`, `GET|DELETE /api/v1/conversations/{id}`
+- `GET|POST|PATCH|DELETE /api/v1/projects`
+- `GET|POST|DELETE /api/v1/knowledge/documents`, `POST /api/v1/knowledge/upload`
+- `POST /api/v1/agents/run`, `POST /api/v1/research`
+- `GET /api/v1/usage`
 
-## Security and compatibility
-Browsers and mobile devices are untrusted clients. Enforce authentication and authorization at the API boundary. Never put provider credentials in `NEXT_PUBLIC_*` variables. All clients use the versioned API; breaking changes require a new API version or a deprecation window.
+All workspace routes require an authenticated Clerk/OIDC subject in production and filter records by that subject. The local development mode uses a fixed local-only identity and must never be exposed publicly.
 
-## Quality gates
-Python: Ruff, mypy, pytest. Web: TypeScript and ESLint. Changes are developed on feature branches; do not push directly to `main`.
+## Production deployment
 
-## Release gates
-See `docs/RELEASE_GATES.md`. A successful build alone does not mean production-ready. Store publication requires developer accounts, signing, privacy disclosures, store assets, device testing and review approval.
+Production startup is fail-closed. The API requires explicit trusted CORS origins, provider credentials, Clerk OIDC settings, PostgreSQL and Redis. Render runs Alembic migrations before starting the API. Follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) to configure Clerk and deploy the Blueprint.
+
+## Release discipline
+
+CI verifies API lint, types and tests plus web lint, types and production build. A green CI run does not verify external provider credentials, live database connectivity, restore procedures, load capacity or legal compliance. Before opening public registration, complete [docs/RELEASE_GATES.md](docs/RELEASE_GATES.md), including privacy/terms, retention and deletion, backups and restore tests, security review, monitoring and cost controls.
