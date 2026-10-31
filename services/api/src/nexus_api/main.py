@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from nexus_api.agents import AGENTS
 from nexus_api.auth import require_user
@@ -79,8 +80,16 @@ async def liveness() -> dict[str, str]:
 async def readiness() -> JSONResponse:
     provider_ok = bool(settings.openai_api_key.get_secret_value())
     identity_ok = settings.authentication_configured
-    database_ok = await check_database() if settings.database_url else False
-    redis_ok = await check_redis() if settings.redis_url else False
+    try:
+        database_ok = await check_database() if settings.database_url else False
+    except Exception:
+        logger.exception("Database readiness check failed")
+        database_ok = False
+    try:
+        redis_ok = await check_redis() if settings.redis_url else False
+    except Exception:
+        logger.exception("Redis readiness check failed")
+        redis_ok = False
     required_ok = provider_ok and identity_ok and database_ok and redis_ok
     ready = required_ok if settings.app_env.lower() == "production" else provider_ok
     return JSONResponse(
@@ -126,7 +135,7 @@ async def create_conversation(claims: Identity, db: Database, title: str = "New 
 @app.get("/api/v1/conversations/{conversation_id}", tags=["conversations"])
 async def get_conversation(conversation_id: int, claims: Identity, db: Database) -> dict[str, Any]:
     result = await db.execute(
-        select(Conversation).where(Conversation.id == conversation_id, Conversation.user_id == owner_id(claims))
+        select(Conversation).options(selectinload(Conversation.messages)).where(Conversation.id == conversation_id, Conversation.user_id == owner_id(claims))
     )
     conversation = result.scalar_one_or_none()
     if conversation is None:
