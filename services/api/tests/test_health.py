@@ -23,8 +23,7 @@ def test_chat_rejects_empty_messages() -> None:
     assert response.status_code == 422
 
 
-def test_chat_requires_oidc_bearer_when_identity_is_configured(monkeypatch) -> None:
-    from nexus_api.auth import require_user
+def test_chat_requires_oidc_bearer_when_identity_is_configured() -> None:
     from nexus_api.config import Settings
 
     protected = Settings(
