@@ -13,6 +13,8 @@ class ChatRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     messages: list[ChatMessage] = Field(min_length=1, max_length=100)
     model: str | None = Field(default=None, max_length=100)
+    conversation_id: int | None = Field(default=None, ge=1)
+    document_ids: list[int] = Field(default_factory=list, max_length=10)
 
     def enforce_runtime_limits(self) -> None:
         settings = get_settings()
@@ -28,3 +30,21 @@ class ChatResponse(BaseModel):
     answer: str
     model: str
     provider: str
+    conversation_id: int | None = None
+
+
+class ProjectInput(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    description: str = Field(default="", max_length=4000)
+    color: str = Field(default="green", pattern="^(green|blue|violet|amber|rose)$")
+
+
+class AgentInput(BaseModel):
+    agent: str = Field(pattern="^(architect|researcher|engineer|analyst|writer)$")
+    prompt: str = Field(min_length=1, max_length=16000)
+    model: str | None = Field(default=None, max_length=100)
+
+
+class KnowledgeInput(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    content: str = Field(min_length=1, max_length=100000)
