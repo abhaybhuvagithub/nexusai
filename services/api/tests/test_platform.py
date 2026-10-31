@@ -1,10 +1,10 @@
-from pydantic import ValidationError
 import pytest
+from pydantic import ValidationError
 
 from nexus_api.agents import AGENTS
 from nexus_api.config import Settings
 from nexus_api.models import Base
-from nexus_api.schemas import AgentInput, ChatMessage, ChatRequest, KnowledgeInput, ProjectInput
+from nexus_api.schemas import AgentInput, ChatRequest, KnowledgeInput, ProjectInput
 
 
 def test_production_requires_persistence_and_rate_limit_services() -> None:
