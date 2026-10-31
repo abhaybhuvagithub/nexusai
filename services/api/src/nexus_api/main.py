@@ -8,7 +8,7 @@ from typing import Annotated, Any
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -234,9 +234,10 @@ async def chat_completion(
         conversation_result = await db.execute(
             select(Conversation).where(Conversation.id == conversation_id, Conversation.user_id == user_id)
         )
-        conversation = conversation_result.scalar_one_or_none()
-        if conversation is None:
+        existing_conversation = conversation_result.scalar_one_or_none()
+        if existing_conversation is None:
             raise HTTPException(status_code=404, detail="Conversation not found")
+        conversation = existing_conversation
         if payload.project_id is not None:
             conversation.project_id = payload.project_id
 
@@ -433,13 +434,13 @@ async def export_account_data(claims: Identity, db: Database) -> dict[str, Any]:
 @app.delete("/api/v1/account/data", status_code=status.HTTP_204_NO_CONTENT, tags=["account"])
 async def delete_account_workspace_data(claims: Identity, db: Database) -> None:
     user_id = owner_id(claims)
-    await db.execute(ConversationMessage.__table__.delete().where(
+    await db.execute(delete(ConversationMessage).where(
         ConversationMessage.conversation_id.in_(
             select(Conversation.id).where(Conversation.user_id == user_id)
         )
     ))
-    await db.execute(Conversation.__table__.delete().where(Conversation.user_id == user_id))
-    await db.execute(Project.__table__.delete().where(Project.user_id == user_id))
-    await db.execute(KnowledgeDocument.__table__.delete().where(KnowledgeDocument.user_id == user_id))
-    await db.execute(UsageEvent.__table__.delete().where(UsageEvent.user_id == user_id))
+    await db.execute(delete(Conversation).where(Conversation.user_id == user_id))
+    await db.execute(delete(Project).where(Project.user_id == user_id))
+    await db.execute(delete(KnowledgeDocument).where(KnowledgeDocument.user_id == user_id))
+    await db.execute(delete(UsageEvent).where(UsageEvent.user_id == user_id))
     await db.commit()
