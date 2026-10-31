@@ -1,16 +1,34 @@
 # Release gates
 
-A passing build alone does not make a release production-ready.
+A production launch requires evidence, not just a successful compile.
 
-## Public beta
-- [ ] Authentication, account recovery and server-side authorization tested.
-- [ ] Tenant isolation and resource ownership enforced at query boundaries.
-- [ ] Provider credentials stored in managed secrets; no client-side keys.
-- [ ] Rate limits, spend limits, abuse controls and cancellation enabled.
-- [ ] Privacy policy, terms, retention and account deletion published.
-- [ ] Data export/deletion tested; backups and restore drill documented.
-- [ ] Dependency/container scans, migration tests and API contract tests pass.
-- [ ] Monitoring, metrics, tracing and alerting configured.
+## Implemented in the current branch
+- [x] Clerk sign-in UI integration and OIDC RS256 API verification path.
+- [x] PostgreSQL models and Alembic initial migration for conversations, messages, projects, knowledge documents and usage events.
+- [x] Authenticated user ownership filters on workspace records.
+- [x] Redis-backed per-user request limiting for chat and specialist agent calls.
+- [x] Model allowlist, request limits, provider timeout and explicit CORS.
+- [x] Specialist model workflows, research synthesis, projects, knowledge notes/file extraction and usage reporting.
+- [x] Render Blueprint for web, API, PostgreSQL and Redis.
+- [x] CI coverage for API and web quality gates.
+
+## Required before public beta
+- [ ] Apply the Render Blueprint and verify all four live resources.
+- [ ] Configure Clerk production application, JWT template, issuer and JWKS URL; run end-to-end sign-in and API tests.
+- [ ] Add account export, account deletion and data-retention enforcement.
+- [ ] Add automated database backups and complete a restore drill.
+- [ ] Add provider spend caps, daily user quotas and operational alerts.
+- [ ] Add security/dependency/container scans and independent authorization review.
+- [ ] Add load tests, failure tests, API contract tests and deployment rollback verification.
+- [ ] Publish privacy policy, terms, support contact and incident response procedure.
+- [ ] Confirm live API health/readiness and exercise chat, agents, projects, file upload, deletion and usage flows.
+
+## Later capability expansion
+- [ ] Vector embeddings and permission-aware semantic retrieval.
+- [ ] Live web research with source extraction and citation verification.
+- [ ] Streaming responses, cancellation and tool execution with sandboxing/approval.
+- [ ] Token-level usage and billing integration.
+- [ ] Organization/tenant administration, invitations and role-based access control.
 
 ## Google Play
 - [ ] Play Console account and app ownership verified.
