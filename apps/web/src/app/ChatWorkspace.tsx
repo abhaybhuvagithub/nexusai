@@ -19,7 +19,7 @@ const agents = [
   { id: "writer", name: "Writer", description: "Clear, polished content for any audience" },
 ] as const;
 
-function Workspace({ getToken }: { getToken?: () => Promise<string | null> }) {
+function Workspace({ getToken, isSignedIn }: { getToken?: () => Promise<string | null>; isSignedIn?: boolean }) {
   const [section, setSection] = useState<Section>("chat");
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<number | null>(null);
@@ -63,7 +63,7 @@ function Workspace({ getToken }: { getToken?: () => Promise<string | null> }) {
   }, [getToken]);
 
   const refreshWorkspace = useCallback(async () => {
-    if (!apiBase) return;
+    if (!apiBase || (getToken && !isSignedIn)) return;
     try {
       const [history, projectList, docs, availableModels, metrics] = await Promise.all([
         api<Conversation[]>("/api/v1/conversations"),
@@ -82,7 +82,7 @@ function Workspace({ getToken }: { getToken?: () => Promise<string | null> }) {
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Unable to load workspace data.");
     }
-  }, [api, model]);
+  }, [api, model, getToken, isSignedIn]);
 
   useEffect(() => { void refreshWorkspace(); }, [refreshWorkspace]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages, busy]);
@@ -304,9 +304,9 @@ function Workspace({ getToken }: { getToken?: () => Promise<string | null> }) {
 }
 
 function AuthenticatedWorkspace() {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
   const tokenGetter = useCallback(() => getToken({ template: "nexus-api" }), [getToken]);
-  return <Workspace getToken={tokenGetter} />;
+  return <Workspace getToken={tokenGetter} isSignedIn={Boolean(isSignedIn)} />;
 }
 
 export default function ChatWorkspace() {
