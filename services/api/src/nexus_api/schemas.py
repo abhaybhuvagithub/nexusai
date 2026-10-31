@@ -49,3 +49,9 @@ class AgentInput(BaseModel):
 class KnowledgeInput(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     content: str = Field(min_length=1, max_length=100000)
+
+
+class AgentWorkflowInput(BaseModel):
+    task: str = Field(min_length=1, max_length=12000)
+    steps: list[str] = Field(default_factory=lambda: ["architect", "engineer", "analyst"], min_length=2, max_length=4)
+    model: str | None = Field(default=None, max_length=100)
