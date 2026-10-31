@@ -8,6 +8,13 @@ class ChatMessage(BaseModel):
     role: str = Field(pattern="^(system|user|assistant)$")
     content: str = Field(min_length=1, max_length=32000)
 
+    @field_validator("content")
+    @classmethod
+    def nonblank_content(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Message content cannot be blank")
+        return value
+
 
 class ChatRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
