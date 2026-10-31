@@ -1,7 +1,7 @@
 import logging
-from typing import Any
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -78,7 +78,7 @@ async def readiness() -> JSONResponse:
 async def chat_completion(
     payload: ChatRequest,
     request: Request,
-    _: dict[str, Any] | None = Depends(require_user),
+    _: Annotated[dict[str, Any] | None, Depends(require_user)],
 ) -> ChatResponse:
     try:
         payload.enforce_runtime_limits()
