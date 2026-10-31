@@ -1,47 +1,11 @@
-name: Deploy web preview
+name: Legacy GitHub Pages preview (retired)
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/web/**"
-      - ".github/workflows/deploy-web-preview.yml"
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: nexusai-pages-production
-  cancel-in-progress: true
+  workflow_dispatch:
 
 jobs:
-  build:
+  notice:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: "24"
-      - name: Install dependencies
-        working-directory: apps/web
-        run: npm install --no-audit --no-fund
-      - name: Build static web app
-        working-directory: apps/web
-        run: GITHUB_PAGES=true npm run build
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: apps/web/out
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-24.04
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+      - name: Explain current hosting
+        run: echo "The active Next.js application is hosted on Render. The previously published GitHub Pages URL remains a legacy static preview.";
