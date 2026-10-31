@@ -4,7 +4,16 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from nexus_api.config import get_settings
 
-_url = get_settings().database_url
+
+def async_url(url: str) -> str:
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+asyncpg://", 1)
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
+_url = async_url(get_settings().database_url)
 _engine = create_async_engine(_url, pool_pre_ping=True, pool_size=5, max_overflow=10) if _url else None
 _session_factory = async_sessionmaker(_engine, expire_on_commit=False) if _engine else None
 
