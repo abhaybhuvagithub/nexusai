@@ -307,7 +307,7 @@ async def create_document(payload: KnowledgeInput, claims: Identity, db: Databas
 async def upload_knowledge_file(
     claims: Identity,
     db: Database,
-    file: UploadFile = File(...),
+    file: Annotated[UploadFile, File()],
 ) -> dict[str, Any]:
     filename = (file.filename or "document").strip()
     if len(filename) > 200:
