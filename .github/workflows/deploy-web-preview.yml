@@ -1,43 +1,49 @@
 name: Deploy web preview
+
 on:
   push:
-    branches: [feat/production-foundation]
+    branches: [main]
     paths:
       - "apps/web/**"
       - ".github/workflows/deploy-web-preview.yml"
-  workflow_dispatch:
+
 permissions:
   contents: read
   pages: write
   id-token: write
+
 concurrency:
-  group: nexusai-pages-preview
+  group: nexusai-pages-production
   cancel-in-progress: true
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
       - name: Install dependencies
         working-directory: apps/web
-        run: npm install
+        run: npm ci --no-audit --no-fund
       - name: Build static web app
         working-directory: apps/web
         run: npm run build
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: apps/web/out
+
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
