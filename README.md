@@ -5,7 +5,7 @@ NEXUS AI is a multi-module AI workspace with authenticated chat, specialist mode
 ## Product capabilities
 
 - **AI chat:** OpenAI-backed chat with model allowlisting, server-side provider credentials and persistent conversation history.
-- **Specialist agents:** Architect, Researcher, Engineer, Analyst and Writer workflows with role-specific instructions.
+- **Specialist agents:** Architect, Researcher, Engineer, Analyst and Writer workflows with role-specific instructions, plus a bounded three-specialist sequential workflow.
 - **Research studio:** structured model-assisted research briefs with explicit disclosure when no live web sources were retrieved.
 - **Projects:** private project records scoped to the authenticated account.
 - **Knowledge library:** private text notes and TXT, MD, CSV, JSON, LOG, PDF and DOCX ingestion (5 MB upload limit); selected documents can be supplied as chat context.
