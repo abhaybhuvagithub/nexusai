@@ -42,3 +42,5 @@
 
 .upload-panel{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:15px 17px;margin:20px 0 12px;border:1px dashed #425b45;border-radius:10px;background:#111d15}.upload-panel label{display:grid;gap:8px;color:#91a398;font-size:9px;letter-spacing:1px;font-weight:700}.upload-panel input{max-width:100%;color:#c8d7ca;font-size:10px}.upload-panel input::file-selector-button{border:1px solid #49603b;border-radius:6px;background:#1b2a1e;color:#d7e8d2;padding:7px 10px;margin-right:9px}.upload-panel>span{font-size:9px;color:#75877b}
 @media(max-width:620px){.upload-panel{align-items:flex-start;flex-direction:column}}
+
+.account-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid #2b3e30}.secondary-action,.danger-action{border:1px solid #405545;border-radius:7px;background:#16231a;color:#c8d8ca;padding:9px 12px;font-size:10px}.danger-action{border-color:#70413b;background:#281a18;color:#e4aaa0}.danger-action:disabled{opacity:.45;cursor:not-allowed}
