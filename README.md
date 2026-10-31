@@ -2,15 +2,18 @@
 
 A multimodal AI workspace for web, Android and iOS, backed by a shared API and agent platform.
 
-> **Current release status:** the static web workspace is published on GitHub Pages. The API has a starter implementation and production-hardening work is in progress. The complete hosted product is **not yet production-ready**: managed identity, durable conversation storage, rate limiting/abuse controls, streaming, operational monitoring, backup/restore and a hosted API deployment must be completed before a public beta.
+> **Current release status:** the static web workspace is published on GitHub Pages. The API has a starter implementation and production-hardening work is in progress. The Clerk sign-in integration and Render deployment Blueprint are prepared on the production-hardening branch. The complete hosted product is **not yet production-ready**: Render resources and Clerk production credentials still require account-side setup, and durable conversation storage, rate limiting/abuse controls, streaming, operational monitoring, backup/restore and broader release gates remain before a public beta.
 
 ## Live links
 
 - Web workspace: https://abhaybhuvagithub.github.io/nexusai/
 - Source repository: https://github.com/abhaybhuvagithub/nexusai
 - Deployment workflow: https://github.com/abhaybhuvagithub/nexusai/actions/workflows/deploy-web-preview.yml
+- Render Blueprint: `render.yaml`
+- Clerk + Render setup guide: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+- Production-hardening PR: https://github.com/abhaybhuvagithub/nexusai/pull/2
 
-The web URL currently serves the interactive workspace preview. It does not imply that live AI inference is connected.
+The GitHub Pages URL currently serves the interactive workspace preview. It does not imply that live AI inference is connected. The Render Blueprint is intended to create a separate authenticated web deployment and API service after account setup.
 
 ## Applications
 - `apps/web` — Next.js web client
