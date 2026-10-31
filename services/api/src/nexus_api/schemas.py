@@ -14,6 +14,7 @@ class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1, max_length=100)
     model: str | None = Field(default=None, max_length=100)
     conversation_id: int | None = Field(default=None, ge=1)
+    project_id: int | None = Field(default=None, ge=1)
     document_ids: list[int] = Field(default_factory=list, max_length=10)
 
     def enforce_runtime_limits(self) -> None:
