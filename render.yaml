@@ -2,14 +2,14 @@ databases:
   - name: nexusai-db
     databaseName: nexusai
     user: nexusai
-    plan: basic-1gb
+    plan: free
     region: singapore
     postgresMajorVersion: "16"
 
 services:
   - type: keyvalue
     name: nexusai-cache
-    plan: 256mb
+    plan: free
     region: singapore
     ipAllowList: []
     maxmemoryPolicy: allkeys-lru
@@ -20,7 +20,7 @@ services:
     name: nexusai-web
     rootDir: apps/web
     region: singapore
-    plan: starter
+    plan: free
     buildCommand: npm install --no-audit --no-fund && npm run build
     startCommand: npm run start -- --hostname 0.0.0.0
     healthCheckPath: /
