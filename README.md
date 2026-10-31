@@ -2,12 +2,18 @@
 
 A multimodal AI workspace for web, Android and iOS, backed by a shared API and agent platform.
 
-> Development status: foundation scaffold. Not yet production-ready.
+ > Development status: interactive web workspace preview with a starter API. Authentication, durable server-side conversations, streaming, agents, retrieval and production deployment are still in progress.
 
 ## Applications
 - `apps/web` — Next.js web client
 - `apps/mobile` — Expo / React Native Android and iOS client
 - `services/api` — FastAPI backend and model-provider adapter
+
+## Web workspace preview
+
+The web client includes a responsive workspace shell, local conversation history, model selector, starter prompts and API integration. Without an API URL it clearly runs in preview mode and does not pretend to generate model answers.
+
+For a connected local API, create `apps/web/.env.local` with `NEXT_PUBLIC_NEXUS_API_URL=http://localhost:8000`, start the API, then run the web client. Keep provider API keys only in the API service environment; never put them in `NEXT_PUBLIC_*` variables.
 
 ## Local development
 Requirements: Node.js 22+, Python 3.12+, Docker Compose.
