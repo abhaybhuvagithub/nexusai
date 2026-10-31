@@ -1,0 +1,63 @@
+services:
+  - type: web
+    runtime: static
+    name: nexusai-web
+    rootDir: apps/web
+    buildCommand: npm install --no-audit --no-fund && npm run build
+    staticPublishPath: out
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+    envVars:
+      - key: GITHUB_PAGES
+        value: "false"
+      - key: NEXT_PUBLIC_NEXUS_API_URL
+        value: https://nexusai-api.onrender.com
+      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false
+
+  - type: web
+    runtime: python
+    name: nexusai-api
+    rootDir: services/api
+    region: singapore
+    plan: starter
+    buildCommand: pip install .
+    startCommand: uvicorn nexus_api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health/live
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4.1-mini
+      - key: ALLOWED_MODELS
+        value: gpt-4.1-mini,gpt-4.1,o4-mini
+      - key: CORS_ORIGINS
+        value: https://nexusai-web.onrender.com,https://abhaybhuvagithub.github.io
+      - key: OIDC_ISSUER
+        sync: false
+      - key: OIDC_AUDIENCE
+        value: nexus-api
+      - key: OIDC_JWKS_URL
+        sync: false
+      - key: MAX_REQUEST_MESSAGES
+        value: "50"
+      - key: MAX_MESSAGE_CHARS
+        value: "16000"
+      - key: MAX_COMPLETION_TOKENS
+        value: "2048"
+      - key: PROVIDER_TIMEOUT_SECONDS
+        value: "45"
