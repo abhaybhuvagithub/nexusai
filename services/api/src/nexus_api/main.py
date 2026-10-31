@@ -297,6 +297,7 @@ async def list_documents(claims: Identity, db: Database) -> list[dict[str, Any]]
 
 @app.post("/api/v1/knowledge/documents", status_code=status.HTTP_201_CREATED, tags=["knowledge"])
 async def create_document(payload: KnowledgeInput, claims: Identity, db: Database) -> dict[str, Any]:
+    await enforce_rate_limit(owner_id(claims))
     document = KnowledgeDocument(user_id=owner_id(claims), title=payload.title.strip(), content=payload.content, content_chars=len(payload.content))
     db.add(document)
     await db.commit()
@@ -312,6 +313,7 @@ async def upload_knowledge_file(
     db: Database,
     file: Annotated[UploadFile, File()],
 ) -> dict[str, Any]:
+    await enforce_rate_limit(owner_id(claims))
     filename = (file.filename or "document").strip()
     if len(filename) > 200:
         raise HTTPException(status_code=400, detail="Filename is too long")
