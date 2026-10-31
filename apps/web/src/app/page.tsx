@@ -1,1 +1,5 @@
-export default function HomePage() { return <main className="shell"><nav className="nav"><a className="brand" href="/">✳ NEXUS AI</a><span className="status">● Platform preview</span></nav><section className="hero"><p className="eyebrow">ONE WORKSPACE. MANY POSSIBILITIES.</p><h1>Think bigger.<br/><span>Build with intelligence.</span></h1><p className="intro">Bring conversations, research and AI-powered workflows together in one focused workspace.</p><a className="primary" href="mailto:hello@nexusai.example">Request early access ↗</a><div className="capabilities"><article><b>01 / CONVERSE</b><h2>Explore ideas</h2><p>A clear space for thoughtful AI conversations.</p></article><article><b>02 / RESEARCH</b><h2>Go deeper</h2><p>Build toward grounded research and knowledge tools.</p></article><article><b>03 / CREATE</b><h2>Make progress</h2><p>Workflows and agents designed around your goals.</p></article></div></section><footer>© {new Date().getFullYear()} NEXUS AI · Built for people who build.</footer></main>; }
+import ChatWorkspace from "./ChatWorkspace";
+
+export default function HomePage() {
+  return <ChatWorkspace />;
+}
