@@ -1,8 +1,8 @@
 import io
 import logging
-from datetime import datetime, timezone
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
@@ -412,7 +412,7 @@ async def export_account_data(claims: Identity, db: Database) -> dict[str, Any]:
     document_result = await db.execute(select(KnowledgeDocument).where(KnowledgeDocument.user_id == user_id))
     usage_result = await db.execute(select(UsageEvent).where(UsageEvent.user_id == user_id))
     return {
-        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "exported_at": datetime.now(UTC).isoformat(),
         "projects": [{"id": item.id, "name": item.name, "description": item.description, "color": item.color} for item in project_result.scalars().all()],
         "conversations": [
             {"id": item.id, "title": item.title, "messages": [
