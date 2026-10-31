@@ -16,9 +16,22 @@ from nexus_api.auth import require_user
 from nexus_api.config import get_settings
 from nexus_api.db import check_database, close_database, get_db
 from nexus_api.limits import check_redis, close_redis, enforce_rate_limit
-from nexus_api.models import Conversation, ConversationMessage, KnowledgeDocument, Project, UsageEvent
+from nexus_api.models import (
+    Conversation,
+    ConversationMessage,
+    KnowledgeDocument,
+    Project,
+    UsageEvent,
+)
 from nexus_api.providers import OpenAIProvider
-from nexus_api.schemas import AgentInput, ChatMessage, ChatRequest, ChatResponse, KnowledgeInput, ProjectInput
+from nexus_api.schemas import (
+    AgentInput,
+    ChatMessage,
+    ChatRequest,
+    ChatResponse,
+    KnowledgeInput,
+    ProjectInput,
+)
 
 settings = get_settings()
 logging.basicConfig(level=settings.log_level.upper())
