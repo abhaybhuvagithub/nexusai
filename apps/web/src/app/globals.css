@@ -15,3 +15,17 @@
 .feature-page{width:min(800px,calc(100% - 48px));margin:auto;padding:80px 0}.feature-orb{width:44px;height:44px;border-radius:14px;background:#203724;color:var(--accent);display:grid;place-items:center;font-size:24px;margin-bottom:27px}.feature-page h1{max-width:620px}.feature-description{max-width:560px;color:#91a398;font-size:13px;line-height:1.8;margin:17px 0 30px}.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.feature-tile{border:1px solid #2a3d30;border-radius:10px;padding:17px;background:#101b14;min-height:120px}.feature-tile span{color:var(--accent);font-size:9px}.feature-tile p{font-size:11px;line-height:1.6;color:#c3d0c5;margin-top:18px}.back-chat{margin-top:26px;background:none;border:1px solid #3a5040;color:#c5d5c7;border-radius:7px;padding:9px 12px;font-size:10px}
 @media(max-width:850px){.app-frame{grid-template-columns:210px minmax(0,1fr)}.sidebar{padding-left:11px;padding-right:11px}.topbar{padding:0 20px}.app-footer{padding:0 20px}.welcome h1{font-size:46px}}
 @media(max-width:620px){.app-frame{display:block}.sidebar{height:auto;position:relative;padding:13px 15px;border-right:0;border-bottom:1px solid var(--line)}.brand{padding:0 3px 12px}.new-chat,.side-label,.side-nav,.history-list,.sidebar-bottom{display:none}.main-panel{min-height:calc(100vh - 60px)}.topbar{height:52px;padding:0 15px}.preview-pill{font-size:8px}.chat-area{min-height:calc(100vh - 112px);padding:26px 16px 10px}.welcome h1{font-size:39px;letter-spacing:-1.8px}.starter-grid{gap:8px}.starter-card{padding:12px;min-height:112px}.starter-card p{font-size:9px}.starter-card b{font-size:10px}.composer-wrap{margin-top:22px}.composer textarea{font-size:11px}.app-footer{padding:0 15px}.app-footer span:nth-child(2){display:none}.feature-page{padding:50px 0}.feature-grid{grid-template-columns:1fr}.conversation{padding:0 2px}.message-body p{font-size:11px}}
+
+
+.auth-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-actions .icon-button {
+  width: auto;
+  min-width: 0;
+  padding: 8px 12px;
+  font-size: 12px;
+}
