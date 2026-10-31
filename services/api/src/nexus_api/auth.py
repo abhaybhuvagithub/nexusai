@@ -5,6 +5,7 @@ from typing import Any
 import jwt
 from fastapi import HTTPException, Request, status
 from jwt import PyJWKClient
+from jwt.exceptions import PyJWKClientConnectionError
 
 from nexus_api.config import Settings
 
@@ -34,8 +35,8 @@ async def require_user(request: Request) -> dict[str, Any] | None:
             audience=settings.oidc_audience, issuer=settings.oidc_issuer,
             options={"require": ["exp", "iat", "sub"]},
         )
+    except PyJWKClientConnectionError:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Identity provider keys are temporarily unavailable") from None
     except (jwt.PyJWTError, ValueError):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired access token", headers={"WWW-Authenticate": "Bearer"}) from None
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Identity provider keys are temporarily unavailable") from None
     return claims
