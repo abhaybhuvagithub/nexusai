@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from nexus_api.config import get_settings
 
@@ -39,16 +39,37 @@ class ProjectInput(BaseModel):
     description: str = Field(default="", max_length=4000)
     color: str = Field(default="green", pattern="^(green|blue|violet|amber|rose)$")
 
+    @field_validator("name")
+    @classmethod
+    def nonblank_name(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Project name cannot be blank")
+        return value.strip()
+
 
 class AgentInput(BaseModel):
     agent: str = Field(pattern="^(architect|researcher|engineer|analyst|writer)$")
     prompt: str = Field(min_length=1, max_length=16000)
     model: str | None = Field(default=None, max_length=100)
 
+    @field_validator("prompt")
+    @classmethod
+    def nonblank_prompt(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Agent prompt cannot be blank")
+        return value
+
 
 class KnowledgeInput(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     content: str = Field(min_length=1, max_length=100000)
+
+    @field_validator("title")
+    @classmethod
+    def nonblank_title(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Document title cannot be blank")
+        return value.strip()
 
 
 class AgentWorkflowInput(BaseModel):
